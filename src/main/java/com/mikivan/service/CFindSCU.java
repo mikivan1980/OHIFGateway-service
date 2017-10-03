@@ -194,14 +194,14 @@ public class CFindSCU {
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
-     public CFindSCU(String[] b,
-                    String[] c,
-                    String[] opts,
-                    String   fileXSLT,
-                    String   findLevel,
-                    String[] m,
-                    String[] r)
-            throws IOException {
+     public CFindSCU( String[] b,
+                      String[] c,
+                      String[] opts,
+                      String   fileXSLT,
+                      String   findLevel,
+                      String[] m,
+                      String[] r)
+                                            throws IOException {
 
         this.device.addConnection(conn);
         this.device.addApplicationEntity(ae);
@@ -211,7 +211,7 @@ public class CFindSCU {
         this.rq.setCalledAET(c[0]);
         this.remote.setHostname(c[1]);
         this.remote.setPort(Integer.parseInt(c[2]));
-        //без настройки proxy, ест в CLIUtils.configureConnect
+        //без настройки proxy, есть в CLIUtils.configureConnect
 
         //замена CLIUtils.configureBind(this.conn, this.ae, cl);
         this.ae.setAETitle(b[0]);
@@ -320,7 +320,7 @@ public class CFindSCU {
             String xsltOutput = main.doFind();
 
 
-            //вывод будущего метода - сделать поиск - doFind();
+            //вывод на консоль;
             if( xsltOutput == null ){
                 System.out.println("xmlOutput == null");
             }
