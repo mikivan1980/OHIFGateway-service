@@ -7,18 +7,13 @@ package com.mikivan.service;
 
         import java.io.BufferedOutputStream;
         import java.io.File;
-        import java.io.FileOutputStream;
         import java.io.IOException;
         import java.io.OutputStream;
         import java.security.GeneralSecurityException;
-        import java.text.DecimalFormat;
-        import java.text.MessageFormat;
         import java.util.EnumSet;
         import java.util.List;
         import java.util.ResourceBundle;
-        import java.util.concurrent.ExecutorService;
         import java.util.concurrent.Executors;
-        import java.util.concurrent.ScheduledExecutorService;
         import java.util.concurrent.atomic.AtomicInteger;
 
         import javax.xml.transform.OutputKeys;
@@ -29,10 +24,8 @@ package com.mikivan.service;
         import javax.xml.transform.stream.StreamResult;
         import javax.xml.transform.stream.StreamSource;
 
-        import org.apache.commons.cli.CommandLine;
-        import org.apache.commons.cli.OptionBuilder;
-        import org.apache.commons.cli.Options;
-        import org.apache.commons.cli.ParseException;
+        //import org.apache.commons.cli.CommandLine;
+        //import org.apache.commons.cli.ParseException;
         import org.dcm4che3.data.*;
         import org.dcm4che3.io.DicomInputStream;
         import org.dcm4che3.io.DicomOutputStream;
@@ -173,103 +166,6 @@ public class CFindSCU {
         this.inFilter = inFilter;
     }
 
-//    private static CommandLine parseComandLine(String[] args)
-//            throws ParseException {
-//        Options opts = new Options();
-//        addServiceClassOptions(opts);
-//        addKeyOptions(opts);
-//        addOutputOptions(opts);
-//        addQueryLevelOption(opts);
-//        addCancelOption(opts);
-//        CLIUtils.addConnectOption(opts);
-//        CLIUtils.addBindOption(opts, "FINDSCU");
-//        CLIUtils.addAEOptions(opts);
-//        CLIUtils.addResponseTimeoutOption(opts);
-//        CLIUtils.addPriorityOption(opts);
-//        CLIUtils.addCommonOptions(opts);
-//        return CLIUtils.parseComandLine(args, opts, rb, CFindSCU.class);
-//    }
-//
-//    @SuppressWarnings("static-access")
-//    private static void addServiceClassOptions(Options opts) {
-//        opts.addOption(OptionBuilder
-//                .hasArg()
-//                .withArgName("name")
-//                .withDescription(rb.getString("model"))
-//                .create("M"));
-//        CLIUtils.addTransferSyntaxOptions(opts);
-//        opts.addOption(null, "relational", false, rb.getString("relational"));
-//        opts.addOption(null, "datetime", false, rb.getString("datetime"));
-//        opts.addOption(null, "fuzzy", false, rb.getString("fuzzy"));
-//        opts.addOption(null, "timezone", false, rb.getString("timezone"));
-//    }
-//
-//    @SuppressWarnings("static-access")
-//    private static void addQueryLevelOption(Options opts) {
-//        opts.addOption(OptionBuilder
-//                .hasArg()
-//                .withArgName("PATIENT|STUDY|SERIES|IMAGE")
-//                .withDescription(rb.getString("level"))
-//                .create("L"));
-//    }
-//
-//    @SuppressWarnings("static-access")
-//    private static void addCancelOption(Options opts) {
-//        opts.addOption(OptionBuilder
-//                .withLongOpt("cancel")
-//                .hasArg()
-//                .withArgName("num-matches")
-//                .withDescription(rb.getString("cancel"))
-//                .create());
-//    }
-//
-//    @SuppressWarnings("static-access")
-//    private static void addKeyOptions(Options opts) {
-//        opts.addOption(OptionBuilder
-//                .hasArgs()
-//                .withArgName("[seq/]attr=value")
-//                .withValueSeparator('=')
-//                .withDescription(rb.getString("match"))
-//                .create("m"));
-//        opts.addOption(OptionBuilder
-//                .hasArgs()
-//                .withArgName("[seq/]attr")
-//                .withDescription(rb.getString("return"))
-//                .create("r"));
-//        opts.addOption(OptionBuilder
-//                .hasArgs()
-//                .withArgName("attr")
-//                .withDescription(rb.getString("in-attr"))
-//                .create("i"));
-//    }
-//
-//    @SuppressWarnings("static-access")
-//    private static void addOutputOptions(Options opts) {
-//        opts.addOption(OptionBuilder
-//                .withLongOpt("out-dir")
-//                .hasArg()
-//                .withArgName("directory")
-//                .withDescription(rb.getString("out-dir"))
-//                .create());
-//        opts.addOption(OptionBuilder
-//                .withLongOpt("out-file")
-//                .hasArg()
-//                .withArgName("name")
-//                .withDescription(rb.getString("out-file"))
-//                .create());
-//        opts.addOption("X", "xml", false, rb.getString("xml"));
-//        opts.addOption(OptionBuilder
-//                .withLongOpt("xsl")
-//                .hasArg()
-//                .withArgName("xsl-file")
-//                .withDescription(rb.getString("xsl"))
-//                .create("x"));
-//        opts.addOption("I", "indent", false, rb.getString("indent"));
-//        opts.addOption("K", "no-keyword", false, rb.getString("no-keyword"));
-//        opts.addOption(null, "xmlns", false, rb.getString("xmlns"));
-//        opts.addOption(null, "out-cat", false, rb.getString("out-cat"));
-//    }
-
     public ApplicationEntity getApplicationEntity() {
         return ae;
     }
@@ -298,15 +194,18 @@ public class CFindSCU {
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
-    //[injections of mikivan][0003]
-    public CFindSCU(String[] b, String[] c, String[] opts, String fileXSLT, String findLevel, String[] m, String[] r)
-            throws IOException, ParseException {
+     public CFindSCU(String[] b,
+                    String[] c,
+                    String[] opts,
+                    String   fileXSLT,
+                    String   findLevel,
+                    String[] m,
+                    String[] r)
+            throws IOException {
 
         this.device.addConnection(conn);
         this.device.addApplicationEntity(ae);
         this.ae.addConnection(conn);
-
-        //CommandLine cl = parseComandLine(args);
 
         //замена CLIUtils.configureConnect(this.remote, this.rq, cl);
         this.rq.setCalledAET(c[0]);
@@ -332,18 +231,15 @@ public class CFindSCU {
                 IVR_LE_FIRST,//CLIUtils.transferSyntaxesOf(cl),
                 queryOptionsOf(this));
 
-
         //configureKeys(this, cl);
         this.addLevel(findLevel);
+        CLIUtils.addEmptyAttributes(this.keys, r);
         CLIUtils.addAttributes(this.keys, m);
-
 
         //configureOutput(this, cl);
         if (!fileXSLT.equals("")) this.setXSLT( new File( fileXSLT ) );
 
-
         //configureCancel(this, cl);
-
 
         //this.setPriority(CLIUtils.priorityOf(cl));
         this.setPriority(0);
@@ -382,6 +278,8 @@ public class CFindSCU {
             this.device.getExecutor2().shutdown();
             this.device.getScheduledExecutor().shutdown();
 
+            this.as.waitForSocketClose();
+
             this.isConstructorWithArgs = false;
 
             return output;
@@ -390,24 +288,16 @@ public class CFindSCU {
 
             return null;
         }
-
     }
-    //[end][0003]
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
-
 
 
     @SuppressWarnings("unchecked")
     public static void main(String[] args) {
-
 //======================================================================================================================
-//      //[injections of mikivan, testing of injections][0004]
 //-b IVAN@192.168.0.74:4006 -c PACS01@192.168.0.35:4006 -L STUDY -m StudyDate=20120101-20161231 -m ModalitiesInStudy=CT --out-cat  -X -K -I
-
-////-b IVAN@192.168.0.74:4006 -c PACS01@192.168.0.35:4006 -L STUDY -m StudyDate=20120101-20161231 -m ModalitiesInStudy=CT --out-cat  -X -K -I
-
 
         try {
 
@@ -415,68 +305,65 @@ public class CFindSCU {
 
 //            String[] bind   = { "IVAN",    "192.168.121.101", "4006"};//строгий порядок
 //            String[] remote = { "WATCHER", "192.168.121.100", "4006"};//строгий порядок
-            String[] bind   = { "IVAN",    "192.168.0.74", "4006"};//строгий порядок
+            String[] bind   = { "IVAN",   "192.168.0.74", "4006"};//строгий порядок
             String[] remote = { "PACS01", "192.168.0.35", "4006"};//строгий порядок
             String[] opts   = {};
-            String[] m = { "StudyDate", "20121002-20171002", "ModalitiesInStudy", "CT"};
-            String[] r = {};
-
+            String[] m      = { "StudyDate", "20121002-20171002", "ModalitiesInStudy", "CT"};
+            String[] r      = {"0020000D", "00080020", "00080030", "00080050", "00080090", "00100010", "00100020",
+                               "00100030", "00100040", "00200010", "00201206", "00201208", "00081030", "00080060",
+                               "00080061"};
 
 
             System.out.println("------------------------------------------------------");
-            CFindSCU main = new CFindSCU(bind, remote, opts, "","STUDY", m, r);
+            CFindSCU main = new CFindSCU(bind, remote, opts, "xslt/mikivan-studies.xsl","STUDY", m, r);
             System.out.println("======================================================");
-            String xmlOutput = main.doFind();
+            String xsltOutput = main.doFind();
 
 
             //вывод будущего метода - сделать поиск - doFind();
-            if( xmlOutput == null ){
+            if( xsltOutput == null ){
                 System.out.println("xmlOutput == null");
             }
             else {
-                System.out.println(xmlOutput);
+                System.out.println(xsltOutput);
             }
 
 
-        } catch (ParseException e) {
-            System.err.println("findscu: " + e.getMessage());
-            System.err.println(rb.getString("try"));
-            System.exit(2);
         } catch (Exception e) {
             System.err.println("findscu: " + e.getMessage());
             e.printStackTrace();
             System.exit(2);
         }
-        //[end][0004]
+
     }
 //======================================================================================================================
-    private static void configure(Connection conn, String[] opts) throws ParseException, IOException {
+
+    private static void configure(Connection conn, String[] opts) throws IOException {
          //пока сделаем все по умолчанию, предполагая список опций в - opts
+        //каждый ключ на своем строгом месте в массиве т.е. строгий порядок
+        conn.setReceivePDULength(16378);  //"max-pdulen-rcv"
+        conn.setSendPDULength(16378);     //"max-pdulen-snd"
 
-        conn.setReceivePDULength(16378);//"max-pdulen-rcv"
-        conn.setSendPDULength(16378);//"max-pdulen-snd"
+        //используем не асинхронный режим if (cl.hasOption("not-async")) {
+        conn.setMaxOpsInvoked(1);         //"max-ops-invoked"
+        conn.setMaxOpsPerformed(1);       //"max-ops-performed"
+//      } else {
+//          conn.setMaxOpsInvoked(getIntOption(cl, "max-ops-invoked", 0));
+//          conn.setMaxOpsPerformed(getIntOption(cl, "max-ops-performed", 0));
+//      }
 
-        //используем не асинхронный режим
-        //if (cl.hasOption("not-async")) {
-            conn.setMaxOpsInvoked(1);   //"max-ops-invoked"
-            conn.setMaxOpsPerformed(1); //"max-ops-performed"
-//        } else {
-//            conn.setMaxOpsInvoked(getIntOption(cl, "max-ops-invoked", 0));
-//            conn.setMaxOpsPerformed(getIntOption(cl, "max-ops-performed", 0));
-//        }
-
-        conn.setPackPDV(false);         //"not-pack-pdv"
-        conn.setConnectTimeout(0);      //"connect-timeout"
-        conn.setRequestTimeout(0);      //"request-timeout"
-        conn.setAcceptTimeout(0);       //"accept-timeout"
-        conn.setReleaseTimeout(0);      //"release-timeout"
-        conn.setResponseTimeout(0);     //"response-timeout"
-        conn.setRetrieveTimeout(0);     //"retrieve-timeout"
-        conn.setIdleTimeout(0);         //"idle-timeout"
-        conn.setSocketCloseDelay(50);   //"soclose-delay"
-        conn.setSendBufferSize(0);      //"sosnd-buffer"
-        conn.setReceiveBufferSize(0);   //"sorcv-buffer"
-        conn.setTcpNoDelay(false);      //"tcp-delay"
+        conn.setPackPDV(false);           //"not-pack-pdv"
+        conn.setConnectTimeout(0);        //"connect-timeout"
+        conn.setRequestTimeout(0);        //"request-timeout"
+        conn.setAcceptTimeout(0);         //"accept-timeout"
+        conn.setReleaseTimeout(0);        //"release-timeout"
+        conn.setResponseTimeout(0);       //"response-timeout"
+        conn.setRetrieveTimeout(0);       //"retrieve-timeout"
+        conn.setIdleTimeout(0);           //"idle-timeout"
+        conn.setSocketCloseDelay(50);     //"soclose-delay"
+        conn.setSendBufferSize(0);        //"sosnd-buffer"
+        conn.setReceiveBufferSize(0);     //"sorcv-buffer"
+        conn.setTcpNoDelay(false);        //"tcp-delay"
 
         // пока без применения TLS протокола
         //configureTLS(conn, cl);
@@ -494,56 +381,21 @@ public class CFindSCU {
         return queryOptions;
     }
 
-//    private static void configureOutput(CFindSCU main, CommandLine cl) {
-//        if (cl.hasOption("out-dir"))
-//            main.setOutputDirectory(new File(cl.getOptionValue("out-dir")));
-//        main.setOutputFileFormat(cl.getOptionValue("out-file", "000'.dcm'"));
-//        main.setConcatenateOutputFiles(cl.hasOption("out-cat"));
-//        main.setXML(cl.hasOption("X"));
-//        if (cl.hasOption("x")) {
-//            main.setXML(true);
-//            main.setXSLT(new File(cl.getOptionValue("x")));
-//        }
-//        main.setXMLIndent(cl.hasOption("I"));
-//        main.setXMLIncludeKeyword(!cl.hasOption("K"));
-//        main.setXMLIncludeNamespaceDeclaration(cl.hasOption("xmlns"));
+
+//    private static void configureCancel(CFindSCU main, CommandLine cl) {
+//        if (cl.hasOption("cancel"))
+//            main.setCancelAfter(Integer.parseInt(cl.getOptionValue("cancel")));
 //    }
 
-    private static void configureCancel(CFindSCU main, CommandLine cl) {
-        if (cl.hasOption("cancel"))
-            main.setCancelAfter(Integer.parseInt(cl.getOptionValue("cancel")));
-    }
-
-    private static void configureKeys(CFindSCU main, CommandLine cl) {
-        CLIUtils.addEmptyAttributes(main.keys, cl.getOptionValues("r"));
-        CLIUtils.addAttributes(main.keys, cl.getOptionValues("m"));
-//        if (cl.hasOption("L"))
-//            main.addLevel(cl.getOptionValue("L"));
-//        if (cl.hasOption("i"))
-//            main.setInputFilter(CLIUtils.toTags(cl.getOptionValues("i")));
-    }
-
-
-
-//    private static void configureServiceClass(CFindSCU main) throws ParseException {
-//        main.setInformationModel(
-//                InformationModel.StudyRoot,
-//                IVR_LE_FIRST,//CLIUtils.transferSyntaxesOf(cl),
-//                queryOptionsOf(main));
+//    private static void configureKeys(CFindSCU main, CommandLine cl) {
+//        CLIUtils.addEmptyAttributes(main.keys, cl.getOptionValues("r"));
+//        CLIUtils.addAttributes(main.keys, cl.getOptionValues("m"));
+////        if (cl.hasOption("L"))
+////            main.addLevel(cl.getOptionValue("L"));
+////        if (cl.hasOption("i"))
+////            main.setInputFilter(CLIUtils.toTags(cl.getOptionValues("i")));
 //    }
 
-//    private static InformationModel informationModelOf(CommandLine cl) throws ParseException {
-//        try {
-//            return cl.hasOption("M")
-//                    ? InformationModel.valueOf(cl.getOptionValue("M"))
-//                    : InformationModel.StudyRoot;
-//        } catch(IllegalArgumentException e) {
-//            throw new ParseException(
-//                    MessageFormat.format(
-//                            rb.getString("invalid-model-name"),
-//                            cl.getOptionValue("M")));
-//        }
-//    }
 
     public void open() throws IOException, InterruptedException,
             IncompatibleConnectionException, GeneralSecurityException {
