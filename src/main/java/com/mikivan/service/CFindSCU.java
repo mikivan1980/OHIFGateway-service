@@ -56,14 +56,7 @@ package com.mikivan.service;
 public class CFindSCU {
 
     public static enum InformationModel {
-        PatientRoot(UID.PatientRootQueryRetrieveInformationModelFIND, "STUDY"),
-        StudyRoot(UID.StudyRootQueryRetrieveInformationModelFIND, "STUDY"),
-        PatientStudyOnly(UID.PatientStudyOnlyQueryRetrieveInformationModelFINDRetired, "STUDY"),
-        MWL(UID.ModalityWorklistInformationModelFIND, null),
-        UPSPull(UID.UnifiedProcedureStepPullSOPClass, null),
-        UPSWatch(UID.UnifiedProcedureStepWatchSOPClass, null),
-        HangingProtocol(UID.HangingProtocolInformationModelFIND, null),
-        ColorPalette(UID.ColorPaletteQueryRetrieveInformationModelFIND, null);
+        StudyRoot(UID.StudyRootQueryRetrieveInformationModelFIND, "STUDY");
 
         final String cuid;
         final String level;
@@ -81,6 +74,11 @@ public class CFindSCU {
         }
     }
 
+    private static String[] IVR_LE_FIRST = new String[]{"1.2.840.10008.1.2", "1.2.840.10008.1.2.1", "1.2.840.10008.1.2.2"};
+    private static String[] EVR_LE_FIRST = new String[]{"1.2.840.10008.1.2.1", "1.2.840.10008.1.2.2", "1.2.840.10008.1.2"};
+    private static String[] EVR_BE_FIRST = new String[]{"1.2.840.10008.1.2.2", "1.2.840.10008.1.2.1", "1.2.840.10008.1.2"};
+    private static String[] IVR_LE_ONLY  = new String[]{"1.2.840.10008.1.2"};
+
     private static ResourceBundle rb =
             ResourceBundle.getBundle("org.dcm4che3.tool.findscu.messages");
     private static SAXTransformerFactory saxtf;
@@ -94,15 +92,17 @@ public class CFindSCU {
     private int cancelAfter;
     private InformationModel model;
 
-    private File outDir;
-    private DecimalFormat outFileFormat;
     private int[] inFilter;
     private Attributes keys = new Attributes();
 
-    private boolean catOut = false;
-    private boolean xml = false;
-    private boolean xmlIndent = false;
-    private boolean xmlIncludeKeyword = true;
+    //output
+    private boolean catOut = true;               //"--out-cat" - объеденить все ответы от удаленного диком сервера
+    //apply specified XSLT stylesheet to XML representation of received matches; implies -X
+    private boolean xml = true;                  //"-X", "--xml" - вывод будет xml или обработаннный xslt.
+    //use additional whitespace in XML output
+    private boolean xmlIndent = true;           //"-I", "--indent" -
+    //do not include keyword attribute of DicomAttribute element in XML output
+    private boolean xmlIncludeKeyword = false;   //"-K", "--no-keyword" - включать ли keyword в xml вывод
     private boolean xmlIncludeNamespaceDeclaration = false;
     private File xsltFile;
     private Templates xsltTpls;
@@ -115,25 +115,25 @@ public class CFindSCU {
     private boolean isConstructorWithArgs = false;
     //[end][0002]
 
-    public CFindSCU() throws IOException {
-        device.addConnection(conn);
-        device.addApplicationEntity(ae);
-        ae.addConnection(conn);
-    }
 
     public final void setPriority(int priority) {
         this.priority = priority;
     }
 
-    public final void setInformationModel(InformationModel model, String[] tss,
-                                          EnumSet<QueryOption> queryOptions) {
+    public final void setInformationModel(
+            InformationModel model,
+            String[] tss,
+            EnumSet<QueryOption> queryOptions) {
+
         this.model = model;
         rq.addPresentationContext(new PresentationContext(1, model.cuid, tss));
+
         if (!queryOptions.isEmpty()) {
             model.adjustQueryOptions(queryOptions);
             rq.addExtendedNegotiation(new ExtendedNegotiation(model.cuid,
                     QueryOption.toExtendedNegotiationInformation(queryOptions)));
         }
+
         if (model.level != null)
             addLevel(model.level);
     }
@@ -146,22 +146,11 @@ public class CFindSCU {
         this.cancelAfter = cancelAfter;
     }
 
-    public final void setOutputDirectory(File outDir) {
-        outDir.mkdirs();
-        this.outDir = outDir;
-    }
-
-    public final void setOutputFileFormat(String outFileFormat) {
-        this.outFileFormat = new DecimalFormat(outFileFormat);
-    }
-
     public final void setXSLT(File xsltFile) {
         this.xsltFile = xsltFile;
     }
 
-    public final void setXML(boolean xml) {
-        this.xml = xml;
-    }
+    public final void setXML(boolean xml) { this.xml = xml; }
 
     public final void setXMLIndent(boolean indent) {
         this.xmlIndent = indent;
@@ -184,102 +173,102 @@ public class CFindSCU {
         this.inFilter = inFilter;
     }
 
-    private static CommandLine parseComandLine(String[] args)
-            throws ParseException {
-        Options opts = new Options();
-        addServiceClassOptions(opts);
-        addKeyOptions(opts);
-        addOutputOptions(opts);
-        addQueryLevelOption(opts);
-        addCancelOption(opts);
-        CLIUtils.addConnectOption(opts);
-        CLIUtils.addBindOption(opts, "FINDSCU");
-        CLIUtils.addAEOptions(opts);
-        CLIUtils.addResponseTimeoutOption(opts);
-        CLIUtils.addPriorityOption(opts);
-        CLIUtils.addCommonOptions(opts);
-        return CLIUtils.parseComandLine(args, opts, rb, CFindSCU.class);
-    }
-
-    @SuppressWarnings("static-access")
-    private static void addServiceClassOptions(Options opts) {
-        opts.addOption(OptionBuilder
-                .hasArg()
-                .withArgName("name")
-                .withDescription(rb.getString("model"))
-                .create("M"));
-        CLIUtils.addTransferSyntaxOptions(opts);
-        opts.addOption(null, "relational", false, rb.getString("relational"));
-        opts.addOption(null, "datetime", false, rb.getString("datetime"));
-        opts.addOption(null, "fuzzy", false, rb.getString("fuzzy"));
-        opts.addOption(null, "timezone", false, rb.getString("timezone"));
-    }
-
-    @SuppressWarnings("static-access")
-    private static void addQueryLevelOption(Options opts) {
-        opts.addOption(OptionBuilder
-                .hasArg()
-                .withArgName("PATIENT|STUDY|SERIES|IMAGE")
-                .withDescription(rb.getString("level"))
-                .create("L"));
-    }
-
-    @SuppressWarnings("static-access")
-    private static void addCancelOption(Options opts) {
-        opts.addOption(OptionBuilder
-                .withLongOpt("cancel")
-                .hasArg()
-                .withArgName("num-matches")
-                .withDescription(rb.getString("cancel"))
-                .create());
-    }
-
-    @SuppressWarnings("static-access")
-    private static void addKeyOptions(Options opts) {
-        opts.addOption(OptionBuilder
-                .hasArgs()
-                .withArgName("[seq/]attr=value")
-                .withValueSeparator('=')
-                .withDescription(rb.getString("match"))
-                .create("m"));
-        opts.addOption(OptionBuilder
-                .hasArgs()
-                .withArgName("[seq/]attr")
-                .withDescription(rb.getString("return"))
-                .create("r"));
-        opts.addOption(OptionBuilder
-                .hasArgs()
-                .withArgName("attr")
-                .withDescription(rb.getString("in-attr"))
-                .create("i"));
-    }
-
-    @SuppressWarnings("static-access")
-    private static void addOutputOptions(Options opts) {
-        opts.addOption(OptionBuilder
-                .withLongOpt("out-dir")
-                .hasArg()
-                .withArgName("directory")
-                .withDescription(rb.getString("out-dir"))
-                .create());
-        opts.addOption(OptionBuilder
-                .withLongOpt("out-file")
-                .hasArg()
-                .withArgName("name")
-                .withDescription(rb.getString("out-file"))
-                .create());
-        opts.addOption("X", "xml", false, rb.getString("xml"));
-        opts.addOption(OptionBuilder
-                .withLongOpt("xsl")
-                .hasArg()
-                .withArgName("xsl-file")
-                .withDescription(rb.getString("xsl"))
-                .create("x"));
-        opts.addOption("I", "indent", false, rb.getString("indent"));
-        opts.addOption("K", "no-keyword", false, rb.getString("no-keyword"));
-        opts.addOption(null, "xmlns", false, rb.getString("xmlns"));
-        opts.addOption(null, "out-cat", false, rb.getString("out-cat"));
-    }
+//    private static CommandLine parseComandLine(String[] args)
+//            throws ParseException {
+//        Options opts = new Options();
+//        addServiceClassOptions(opts);
+//        addKeyOptions(opts);
+//        addOutputOptions(opts);
+//        addQueryLevelOption(opts);
+//        addCancelOption(opts);
+//        CLIUtils.addConnectOption(opts);
+//        CLIUtils.addBindOption(opts, "FINDSCU");
+//        CLIUtils.addAEOptions(opts);
+//        CLIUtils.addResponseTimeoutOption(opts);
+//        CLIUtils.addPriorityOption(opts);
+//        CLIUtils.addCommonOptions(opts);
+//        return CLIUtils.parseComandLine(args, opts, rb, CFindSCU.class);
+//    }
+//
+//    @SuppressWarnings("static-access")
+//    private static void addServiceClassOptions(Options opts) {
+//        opts.addOption(OptionBuilder
+//                .hasArg()
+//                .withArgName("name")
+//                .withDescription(rb.getString("model"))
+//                .create("M"));
+//        CLIUtils.addTransferSyntaxOptions(opts);
+//        opts.addOption(null, "relational", false, rb.getString("relational"));
+//        opts.addOption(null, "datetime", false, rb.getString("datetime"));
+//        opts.addOption(null, "fuzzy", false, rb.getString("fuzzy"));
+//        opts.addOption(null, "timezone", false, rb.getString("timezone"));
+//    }
+//
+//    @SuppressWarnings("static-access")
+//    private static void addQueryLevelOption(Options opts) {
+//        opts.addOption(OptionBuilder
+//                .hasArg()
+//                .withArgName("PATIENT|STUDY|SERIES|IMAGE")
+//                .withDescription(rb.getString("level"))
+//                .create("L"));
+//    }
+//
+//    @SuppressWarnings("static-access")
+//    private static void addCancelOption(Options opts) {
+//        opts.addOption(OptionBuilder
+//                .withLongOpt("cancel")
+//                .hasArg()
+//                .withArgName("num-matches")
+//                .withDescription(rb.getString("cancel"))
+//                .create());
+//    }
+//
+//    @SuppressWarnings("static-access")
+//    private static void addKeyOptions(Options opts) {
+//        opts.addOption(OptionBuilder
+//                .hasArgs()
+//                .withArgName("[seq/]attr=value")
+//                .withValueSeparator('=')
+//                .withDescription(rb.getString("match"))
+//                .create("m"));
+//        opts.addOption(OptionBuilder
+//                .hasArgs()
+//                .withArgName("[seq/]attr")
+//                .withDescription(rb.getString("return"))
+//                .create("r"));
+//        opts.addOption(OptionBuilder
+//                .hasArgs()
+//                .withArgName("attr")
+//                .withDescription(rb.getString("in-attr"))
+//                .create("i"));
+//    }
+//
+//    @SuppressWarnings("static-access")
+//    private static void addOutputOptions(Options opts) {
+//        opts.addOption(OptionBuilder
+//                .withLongOpt("out-dir")
+//                .hasArg()
+//                .withArgName("directory")
+//                .withDescription(rb.getString("out-dir"))
+//                .create());
+//        opts.addOption(OptionBuilder
+//                .withLongOpt("out-file")
+//                .hasArg()
+//                .withArgName("name")
+//                .withDescription(rb.getString("out-file"))
+//                .create());
+//        opts.addOption("X", "xml", false, rb.getString("xml"));
+//        opts.addOption(OptionBuilder
+//                .withLongOpt("xsl")
+//                .hasArg()
+//                .withArgName("xsl-file")
+//                .withDescription(rb.getString("xsl"))
+//                .create("x"));
+//        opts.addOption("I", "indent", false, rb.getString("indent"));
+//        opts.addOption("K", "no-keyword", false, rb.getString("no-keyword"));
+//        opts.addOption(null, "xmlns", false, rb.getString("xmlns"));
+//        opts.addOption(null, "out-cat", false, rb.getString("out-cat"));
+//    }
 
     public ApplicationEntity getApplicationEntity() {
         return ae;
@@ -310,24 +299,54 @@ public class CFindSCU {
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
     //[injections of mikivan][0003]
-    public CFindSCU(String[] args) throws IOException, ParseException {
+    public CFindSCU(String[] b, String[] c, String[] opts, String fileXSLT, String findLevel, String[] m, String[] r)
+            throws IOException, ParseException {
 
         this.device.addConnection(conn);
         this.device.addApplicationEntity(ae);
         this.ae.addConnection(conn);
 
-        CommandLine cl = parseComandLine(args);
+        //CommandLine cl = parseComandLine(args);
 
-        CLIUtils.configureConnect(this.remote, this.rq, cl);
-        CLIUtils.configureBind(this.conn, this.ae, cl);
-        CLIUtils.configure(this.conn, cl);
+        //замена CLIUtils.configureConnect(this.remote, this.rq, cl);
+        this.rq.setCalledAET(c[0]);
+        this.remote.setHostname(c[1]);
+        this.remote.setPort(Integer.parseInt(c[2]));
+        //без настройки proxy, ест в CLIUtils.configureConnect
+
+        //замена CLIUtils.configureBind(this.conn, this.ae, cl);
+        this.ae.setAETitle(b[0]);
+        this.conn.setHostname(b[1]);
+        this.conn.setPort(Integer.parseInt(b[2]));
+
+
+        //замена CLIUtils.configure(this.conn, cl);
+        configure(this.conn, opts);
+
         this.remote.setTlsProtocols(this.conn.getTlsProtocols());
         this.remote.setTlsCipherSuites(this.conn.getTlsCipherSuites());
-        configureServiceClass(this, cl);
-        configureKeys(this, cl);
-        configureOutput(this, cl);
-        configureCancel(this, cl);
-        this.setPriority(CLIUtils.priorityOf(cl));
+
+        //configureServiceClass(this, cl);
+        this.setInformationModel(
+                InformationModel.StudyRoot,
+                IVR_LE_FIRST,//CLIUtils.transferSyntaxesOf(cl),
+                queryOptionsOf(this));
+
+
+        //configureKeys(this, cl);
+        this.addLevel(findLevel);
+        CLIUtils.addAttributes(this.keys, m);
+
+
+        //configureOutput(this, cl);
+        if (!fileXSLT.equals("")) this.setXSLT( new File( fileXSLT ) );
+
+
+        //configureCancel(this, cl);
+
+
+        //this.setPriority(CLIUtils.priorityOf(cl));
+        this.setPriority(0);
 
         this.isConstructorWithArgs = true;
     }
@@ -335,7 +354,6 @@ public class CFindSCU {
 
     public String doFind() throws  Exception{
         if(this.isConstructorWithArgs){
-
 
             this.device.setExecutor2( Executors.newSingleThreadExecutor() );
             this.device.setScheduledExecutor( Executors.newSingleThreadScheduledExecutor() );
@@ -352,11 +370,9 @@ public class CFindSCU {
             String output;
             //вывод
             if( this.out == null ){
-                //System.out.println("main.out == null");
                 output = null;
             }
             else {
-                //System.out.println(this.out.toString());
                 output = this.out.toString();
             }
 
@@ -397,9 +413,19 @@ public class CFindSCU {
 
             for (int i = 0; i < args.length ; i++ ) System.out.println( "args[" + i + "] = " + args[i] );
 
-            System.out.println("-------------");
-            CFindSCU main = new CFindSCU(args);
-            System.out.println("-=====================------------");
+//            String[] bind   = { "IVAN",    "192.168.121.101", "4006"};//строгий порядок
+//            String[] remote = { "WATCHER", "192.168.121.100", "4006"};//строгий порядок
+            String[] bind   = { "IVAN",    "192.168.0.74", "4006"};//строгий порядок
+            String[] remote = { "PACS01", "192.168.0.35", "4006"};//строгий порядок
+            String[] opts   = {};
+            String[] m = { "StudyDate", "20121002-20171002", "ModalitiesInStudy", "CT"};
+            String[] r = {};
+
+
+
+            System.out.println("------------------------------------------------------");
+            CFindSCU main = new CFindSCU(bind, remote, opts, "","STUDY", m, r);
+            System.out.println("======================================================");
             String xmlOutput = main.doFind();
 
 
@@ -422,82 +448,66 @@ public class CFindSCU {
             System.exit(2);
         }
         //[end][0004]
-
+    }
 //======================================================================================================================
-//Старая версия, для работы в консоле.
-//[injections of comment for testing new feature][0005]
-//        try {
-//            CommandLine cl = parseComandLine(args);
-//            FindSCU main = new FindSCU();
-//            CLIUtils.configureConnect(main.remote, main.rq, cl);
-//            CLIUtils.configureBind(main.conn, main.ae, cl);
-//            CLIUtils.configure(main.conn, cl);
-//            main.remote.setTlsProtocols(main.conn.getTlsProtocols());
-//            main.remote.setTlsCipherSuites(main.conn.getTlsCipherSuites());
-//            configureServiceClass(main, cl);
-//            configureKeys(main, cl);
-//            configureOutput(main, cl);
-//            configureCancel(main, cl);
-//            main.setPriority(CLIUtils.priorityOf(cl));
-//            ExecutorService executorService =
-//                    Executors.newSingleThreadExecutor();
-//            ScheduledExecutorService scheduledExecutorService =
-//                    Executors.newSingleThreadScheduledExecutor();
-//            main.device.setExecutor(executorService);
-//            main.device.setScheduledExecutor(scheduledExecutorService);
-//            try {
-//                main.open();
-//                List<String> argList = cl.getArgList();
-//                if (argList.isEmpty())
-//                    main.query();
-//                else
-//                    for (String arg : argList)
-//                        main.query(new File(arg));
-//            } finally {
-//                main.close();
-//                executorService.shutdown();
-//                scheduledExecutorService.shutdown();
-//            }
-//        } catch (ParseException e) {
-//            System.err.println("findscu: " + e.getMessage());
-//            System.err.println(rb.getString("try"));
-//            System.exit(2);
-//        } catch (Exception e) {
-//            System.err.println("findscu: " + e.getMessage());
-//            e.printStackTrace();
-//            System.exit(2);
-//        }
-//[end][0005]
+    private static void configure(Connection conn, String[] opts) throws ParseException, IOException {
+         //пока сделаем все по умолчанию, предполагая список опций в - opts
 
+        conn.setReceivePDULength(16378);//"max-pdulen-rcv"
+        conn.setSendPDULength(16378);//"max-pdulen-snd"
+
+        //используем не асинхронный режим
+        //if (cl.hasOption("not-async")) {
+            conn.setMaxOpsInvoked(1);   //"max-ops-invoked"
+            conn.setMaxOpsPerformed(1); //"max-ops-performed"
+//        } else {
+//            conn.setMaxOpsInvoked(getIntOption(cl, "max-ops-invoked", 0));
+//            conn.setMaxOpsPerformed(getIntOption(cl, "max-ops-performed", 0));
+//        }
+
+        conn.setPackPDV(false);         //"not-pack-pdv"
+        conn.setConnectTimeout(0);      //"connect-timeout"
+        conn.setRequestTimeout(0);      //"request-timeout"
+        conn.setAcceptTimeout(0);       //"accept-timeout"
+        conn.setReleaseTimeout(0);      //"release-timeout"
+        conn.setResponseTimeout(0);     //"response-timeout"
+        conn.setRetrieveTimeout(0);     //"retrieve-timeout"
+        conn.setIdleTimeout(0);         //"idle-timeout"
+        conn.setSocketCloseDelay(50);   //"soclose-delay"
+        conn.setSendBufferSize(0);      //"sosnd-buffer"
+        conn.setReceiveBufferSize(0);   //"sorcv-buffer"
+        conn.setTcpNoDelay(false);      //"tcp-delay"
+
+        // пока без применения TLS протокола
+        //configureTLS(conn, cl);
     }
 
-    private static EnumSet<QueryOption> queryOptionsOf(CFindSCU main, CommandLine cl) {
+
+    private static EnumSet<QueryOption> queryOptionsOf(CFindSCU main) {
         EnumSet<QueryOption> queryOptions = EnumSet.noneOf(QueryOption.class);
-        if (cl.hasOption("relational"))
-            queryOptions.add(QueryOption.RELATIONAL);
-        if (cl.hasOption("datetime"))
-            queryOptions.add(QueryOption.DATETIME);
-        if (cl.hasOption("fuzzy"))
-            queryOptions.add(QueryOption.FUZZY);
-        if (cl.hasOption("timezone"))
-            queryOptions.add(QueryOption.TIMEZONE);
+        if(false) {
+            queryOptions.add(QueryOption.RELATIONAL);  //"relational"
+            queryOptions.add(QueryOption.DATETIME);    //"datetime"
+            queryOptions.add(QueryOption.FUZZY);       //"fuzzy"
+            queryOptions.add(QueryOption.TIMEZONE);    //"timezone"
+        }
         return queryOptions;
     }
 
-    private static void configureOutput(CFindSCU main, CommandLine cl) {
-        if (cl.hasOption("out-dir"))
-            main.setOutputDirectory(new File(cl.getOptionValue("out-dir")));
-        main.setOutputFileFormat(cl.getOptionValue("out-file", "000'.dcm'"));
-        main.setConcatenateOutputFiles(cl.hasOption("out-cat"));
-        main.setXML(cl.hasOption("X"));
-        if (cl.hasOption("x")) {
-            main.setXML(true);
-            main.setXSLT(new File(cl.getOptionValue("x")));
-        }
-        main.setXMLIndent(cl.hasOption("I"));
-        main.setXMLIncludeKeyword(!cl.hasOption("K"));
-        main.setXMLIncludeNamespaceDeclaration(cl.hasOption("xmlns"));
-    }
+//    private static void configureOutput(CFindSCU main, CommandLine cl) {
+//        if (cl.hasOption("out-dir"))
+//            main.setOutputDirectory(new File(cl.getOptionValue("out-dir")));
+//        main.setOutputFileFormat(cl.getOptionValue("out-file", "000'.dcm'"));
+//        main.setConcatenateOutputFiles(cl.hasOption("out-cat"));
+//        main.setXML(cl.hasOption("X"));
+//        if (cl.hasOption("x")) {
+//            main.setXML(true);
+//            main.setXSLT(new File(cl.getOptionValue("x")));
+//        }
+//        main.setXMLIndent(cl.hasOption("I"));
+//        main.setXMLIncludeKeyword(!cl.hasOption("K"));
+//        main.setXMLIncludeNamespaceDeclaration(cl.hasOption("xmlns"));
+//    }
 
     private static void configureCancel(CFindSCU main, CommandLine cl) {
         if (cl.hasOption("cancel"))
@@ -507,29 +517,33 @@ public class CFindSCU {
     private static void configureKeys(CFindSCU main, CommandLine cl) {
         CLIUtils.addEmptyAttributes(main.keys, cl.getOptionValues("r"));
         CLIUtils.addAttributes(main.keys, cl.getOptionValues("m"));
-        if (cl.hasOption("L"))
-            main.addLevel(cl.getOptionValue("L"));
-        if (cl.hasOption("i"))
-            main.setInputFilter(CLIUtils.toTags(cl.getOptionValues("i")));
+//        if (cl.hasOption("L"))
+//            main.addLevel(cl.getOptionValue("L"));
+//        if (cl.hasOption("i"))
+//            main.setInputFilter(CLIUtils.toTags(cl.getOptionValues("i")));
     }
 
-    private static void configureServiceClass(CFindSCU main, CommandLine cl) throws ParseException {
-        main.setInformationModel(informationModelOf(cl),
-                CLIUtils.transferSyntaxesOf(cl), queryOptionsOf(main, cl));
-    }
 
-    private static InformationModel informationModelOf(CommandLine cl) throws ParseException {
-        try {
-            return cl.hasOption("M")
-                    ? InformationModel.valueOf(cl.getOptionValue("M"))
-                    : InformationModel.StudyRoot;
-        } catch(IllegalArgumentException e) {
-            throw new ParseException(
-                    MessageFormat.format(
-                            rb.getString("invalid-model-name"),
-                            cl.getOptionValue("M")));
-        }
-    }
+
+//    private static void configureServiceClass(CFindSCU main) throws ParseException {
+//        main.setInformationModel(
+//                InformationModel.StudyRoot,
+//                IVR_LE_FIRST,//CLIUtils.transferSyntaxesOf(cl),
+//                queryOptionsOf(main));
+//    }
+
+//    private static InformationModel informationModelOf(CommandLine cl) throws ParseException {
+//        try {
+//            return cl.hasOption("M")
+//                    ? InformationModel.valueOf(cl.getOptionValue("M"))
+//                    : InformationModel.StudyRoot;
+//        } catch(IllegalArgumentException e) {
+//            throw new ParseException(
+//                    MessageFormat.format(
+//                            rb.getString("invalid-model-name"),
+//                            cl.getOptionValue("M")));
+//        }
+//    }
 
     public void open() throws IOException, InterruptedException,
             IncompatibleConnectionException, GeneralSecurityException {
@@ -545,25 +559,6 @@ public class CFindSCU {
         out = null;
     }
 
-    public void query(File f) throws Exception {
-        Attributes attrs;
-        String filePath = f.getPath();
-        String fileExt = filePath.substring(filePath.lastIndexOf(".")+1).toLowerCase();
-        DicomInputStream dis = null;
-        try {
-            attrs = fileExt.equals("xml")
-                    ? SAXReader.parse(filePath)
-                    : new DicomInputStream(f).readDataset(-1, -1);
-            if (inFilter != null) {
-                attrs = new Attributes(inFilter.length + 1);
-                attrs.addSelected(attrs, inFilter);
-            }
-        } finally {
-            SafeClose.close(dis);
-        }
-        mergeKeys(attrs, keys);
-        query(attrs);
-    }
 
     private static class MergeNested implements Attributes.Visitor {
         private final Attributes keys;
@@ -689,11 +684,6 @@ public class CFindSCU {
         }
     }
 
-    private String fname(int i) {
-        synchronized (outFileFormat) {
-            return outFileFormat.format(i);
-        }
-    }
 
     private void writeAsXML(Attributes attrs, OutputStream out) throws Exception {
         TransformerHandler th = getTransformerHandler();
