@@ -11,8 +11,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="lib-OHIFGateway" target="1.5" />
-      <module name="OHIFGateway-service" target="1.5" />
+      <module name="OHIFGateway-service" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

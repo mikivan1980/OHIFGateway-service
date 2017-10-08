@@ -72,8 +72,8 @@ public class CFindSCU {
     private static String[] EVR_BE_FIRST = new String[]{"1.2.840.10008.1.2.2", "1.2.840.10008.1.2.1", "1.2.840.10008.1.2"};
     private static String[] IVR_LE_ONLY  = new String[]{"1.2.840.10008.1.2"};
 
-    private static ResourceBundle rb =
-            ResourceBundle.getBundle("org.dcm4che3.tool.findscu.messages");
+//    private static ResourceBundle rb =
+//            ResourceBundle.getBundle("org.dcm4che3.tool.findscu.messages");
     private static SAXTransformerFactory saxtf;
 
     private final Device device = new Device("findscu");
@@ -263,14 +263,11 @@ public class CFindSCU {
                 this.as.release();
             }
 
-            String output;
             //вывод
-            if( this.out == null ){
-                output = null;
-            }
-            else {
-                output = this.out.toString();
-            }
+            String output;
+            if( this.out == null )
+                 output = null;
+            else output = this.out.toString();
 
             SafeClose.close(this.out);
             this.out = null;
@@ -303,30 +300,26 @@ public class CFindSCU {
 
             for (int i = 0; i < args.length ; i++ ) System.out.println( "args[" + i + "] = " + args[i] );
 
-//            String[] bind   = { "IVAN",    "192.168.121.101", "4006"};//строгий порядок
-//            String[] remote = { "WATCHER", "192.168.121.100", "4006"};//строгий порядок
-            String[] bind   = { "IVAN",   "192.168.0.74", "4006"};//строгий порядок
-            String[] remote = { "PACS01", "192.168.0.35", "4006"};//строгий порядок
+            String[] bind   = { "IVAN",    "192.168.121.101", "4006"};//строгий порядок
+            String[] remote = { "WATCHER", "192.168.121.100", "4006"};//строгий порядок
+//            String[] bind   = { "IVAN",   "192.168.0.74", "4006"};//строгий порядок
+//            String[] remote = { "PACS01", "192.168.0.35", "4006"};//строгий порядок
             String[] opts   = {};
-            String[] m      = { "StudyDate", "20121002-20171002", "ModalitiesInStudy", "CT"};
+            String[] m      = { "StudyDate", "20171004-20171004", "ModalitiesInStudy", "CT"};
             String[] r      = {"0020000D", "00080020", "00080030", "00080050", "00080090", "00100010", "00100020",
                                "00100030", "00100040", "00200010", "00201206", "00201208", "00081030", "00080060",
                                "00080061"};
 
 
-            System.out.println("------------------------------------------------------");
+
             CFindSCU main = new CFindSCU(bind, remote, opts, "xslt/mikivan-studies.xsl","STUDY", m, r);
-            System.out.println("======================================================");
+
             String xsltOutput = main.doFind();
 
 
-            //вывод на консоль;
-            if( xsltOutput == null ){
-                System.out.println("xmlOutput == null");
-            }
-            else {
-                System.out.println(xsltOutput);
-            }
+            if( xsltOutput == null )
+                 System.out.println("xmlOutput == null");
+            else System.out.println(xsltOutput);
 
 
         } catch (Exception e) {
@@ -334,7 +327,6 @@ public class CFindSCU {
             e.printStackTrace();
             System.exit(2);
         }
-
     }
 //======================================================================================================================
 
