@@ -9,7 +9,6 @@ package com.mikivan.service;
         //import java.util.concurrent.ExecutorService;
         import java.util.concurrent.Executors;
         //import java.util.concurrent.ScheduledExecutorService;
-
         //import org.apache.commons.cli.CommandLine;
         //import org.apache.commons.cli.OptionBuilder;
         //import org.apache.commons.cli.Options;
@@ -19,7 +18,7 @@ package com.mikivan.service;
         import org.dcm4che3.data.Attributes;
         import org.dcm4che3.data.ElementDictionary;
         import org.dcm4che3.data.VR;
-        import org.dcm4che3.io.DicomInputStream;
+        //import org.dcm4che3.io.DicomInputStream;
         import org.dcm4che3.net.ApplicationEntity;
         import org.dcm4che3.net.Association;
         import org.dcm4che3.net.Connection;
@@ -50,8 +49,8 @@ public class CMoveSCU extends Device {
         }
     }
 
-    private static ResourceBundle rb =
-            ResourceBundle.getBundle("org.dcm4che3.tool.movescu.messages");
+//    private static ResourceBundle rb =
+//            ResourceBundle.getBundle("org.dcm4che3.tool.movescu.messages");
 
     private static final int[] DEF_IN_FILTER = {
             Tag.SOPInstanceUID,
@@ -119,77 +118,13 @@ public class CMoveSCU extends Device {
     }
 
 
-
-//    private static CommandLine parseComandLine(String[] args)
-//            throws ParseException {
-//        Options opts = new Options();
-//        addServiceClassOptions(opts);
-//        addKeyOptions(opts);
-//        addRetrieveLevelOption(opts);
-//        addDestinationOption(opts);
-//        CLIUtils.addConnectOption(opts);
-//        CLIUtils.addBindOption(opts, "MOVESCU");
-//        CLIUtils.addAEOptions(opts);
-//        CLIUtils.addRetrieveTimeoutOption(opts);
-//        CLIUtils.addPriorityOption(opts);
-//        CLIUtils.addCommonOptions(opts);
-//        return CLIUtils.parseComandLine(args, opts, rb, CMoveSCU.class);
-//    }
-//
-//    @SuppressWarnings("static-access")
-//    private static void addRetrieveLevelOption(Options opts) {
-//        opts.addOption(OptionBuilder
-//                .hasArg()
-//                .withArgName("PATIENT|STUDY|SERIES|IMAGE|FRAME")
-//                .withDescription(rb.getString("level"))
-//                .create("L"));
-//    }
-//
-//    @SuppressWarnings("static-access")
-//    private static void addDestinationOption(Options opts) {
-//        opts.addOption(OptionBuilder
-//                .withLongOpt("dest")
-//                .hasArg()
-//                .withArgName("aet")
-//                .withDescription(rb.getString("dest"))
-//                .create());
-//
-//    }
-//
-//    @SuppressWarnings("static-access")
-//    private static void addKeyOptions(Options opts) {
-//        opts.addOption(OptionBuilder
-//                .hasArgs()
-//                .withArgName("attr=value")
-//                .withValueSeparator('=')
-//                .withDescription(rb.getString("match"))
-//                .create("m"));
-//        opts.addOption(OptionBuilder
-//                .hasArgs()
-//                .withArgName("attr")
-//                .withDescription(rb.getString("in-attr"))
-//                .create("i"));
-//    }
-//
-//    @SuppressWarnings("static-access")
-//    private static void addServiceClassOptions(Options opts) {
-//        opts.addOption(OptionBuilder
-//                .hasArg()
-//                .withArgName("name")
-//                .withDescription(rb.getString("model"))
-//                .create("M"));
-//        CLIUtils.addTransferSyntaxOptions(opts);
-//        opts.addOption(null, "relational", false, rb.getString("relational"));
-//    }
-
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
-    //[injections of mikivan][0003]
     public CMoveSCU(String[] b,
                     String[] c,
                     String[] opts,
-                    String   findLevel,
+                    String   moveLevel,
                     String[] m,
                     String[] args) throws IOException, ParseException {
 
@@ -224,12 +159,13 @@ public class CMoveSCU extends Device {
         //CommandLine cl = parseComandLine(args);
 
         //configureKeys(this, cl);
-        this.addLevel(findLevel);
+        this.addLevel(moveLevel);
         CLIUtils.addAttributes(this.keys, m);
 
         //this.setPriority(CLIUtils.priorityOf(cl));
         //this.setDestination(destinationOf(cl));
         this.setPriority(0);
+        this.setDestination(b[0]);//"IVAN"
 
         this.isConstructorWithArgs = true;
     }
@@ -281,43 +217,35 @@ public class CMoveSCU extends Device {
 
 
     }
-    //[end][0003]
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
-
-
 
     @SuppressWarnings("unchecked")
     public static void main(String[] args) {
 // -b IVAN@192.168.121.101:49049 -c WATCHER@192.168.121.100:4006 -L STUDY -m StudyInstanceUID=1.2.840.113704.1.111.4156.1367430813.2 --explicit-vr --dest IVAN
 // -b IVAN@192.168.121.101:49049 -c WATCHER@192.168.121.100:4006 -L STUDY -m StudyInstanceUID=1.3.46.670589.11.33435.5.0.28680.2017092509091596050 --explicit-vr --dest AE_TITLE
 // -b IVAN@192.168.121.101:49049 -c WATCHER@192.168.121.100:4006 -L STUDY -m StudyInstanceUID=1.3.46.670589.11.33435.5.0.28680.2017092509091596050 --explicit-vr
-//-b IVAN@192.168.121.101:49049 -c WATCHER@192.168.121.100:4006 -L STUDY -m StudyInstanceUID=1.3.46.670589.11.33435.5.0.28680.2017092509091596050 --explicit-vr --dest IVAN
+// -b IVAN@192.168.121.101:49049 -c WATCHER@192.168.121.100:4006 -L STUDY -m StudyInstanceUID=1.3.46.670589.11.33435.5.0.28680.2017092509091596050 --explicit-vr --dest IVAN
 
         try{
 
             for (int i = 0; i < args.length ; i++ ) System.out.println( "args[" + i + "] = " + args[i] );
 
-            String[] bind   = { "IVAN",    "192.168.121.101", "4006"};//строгий порядок
-            String[] remote = { "WATCHER", "192.168.121.100", "4006"};//строгий порядок
-//            String[] bind   = { "IVAN",   "192.168.0.74", "4006"};//строгий порядок
-//            String[] remote = { "PACS01", "192.168.0.35", "4006"};//строгий порядок
+//            String[] bind   = { "IVAN",    "192.168.121.101", "4006"};//строгий порядок
+//            String[] remote = { "WATCHER", "192.168.121.100", "4006"};//строгий порядок
+            String[] bind   = { "IVAN",   "192.168.0.74", "49049"};//строгий порядок
+            String[] remote = { "PACS01", "192.168.0.35", "4006"};//строгий порядок
             String[] opts   = {};
-            String[] m      = { "StudyInstanceUID", "1.2.840.113704.1.111.4156.1367430813.2"};
+//            String[] m      = { "StudyInstanceUID", "1.2.840.113704.1.111.4156.1367430813.2"};
+            String[] m      = { "StudyInstanceUID", "1.2.840.113619.2.134.1762938020.1589.1356408822.224"};
 
             CMoveSCU main = new CMoveSCU(bind, remote, opts, "STUDY", m, args);
 
             System.out.println("main.doMove() = " + main.doMove());
 
-            //System.in.read();
-
             System.out.println("===================");
 
-//        } catch (ParseException e) {
-//            System.err.println("movescu: " + e.getMessage());
-//            System.err.println(rb.getString("try"));
-//            System.exit(2);
         } catch (Exception e) {
             System.err.println("movescu: " + e.getMessage());
             e.printStackTrace();
@@ -408,17 +336,6 @@ public class CMoveSCU extends Device {
         }
     }
 
-//    public void retrieve(File f) throws IOException, InterruptedException {
-//        Attributes attrs = new Attributes();
-//        DicomInputStream dis = null;
-//        try {
-//            attrs.addSelected(new DicomInputStream(f).readDataset(-1, -1), inFilter);
-//        } finally {
-//            SafeClose.close(dis);
-//        }
-//        attrs.addAll(keys);
-//        retrieve(attrs);
-//    }
 
     public void retrieve() throws IOException, InterruptedException {
         retrieve(keys);
