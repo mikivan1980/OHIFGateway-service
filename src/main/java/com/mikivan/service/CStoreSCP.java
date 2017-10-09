@@ -94,9 +94,7 @@ public class CStoreSCP {
                     } } catch (Exception e) {
                     throw new DicomServiceException(Status.ProcessingFailure, e);
                 }
-
         }
-
     };
 
     private DicomServiceRegistry createServiceRegistry() {

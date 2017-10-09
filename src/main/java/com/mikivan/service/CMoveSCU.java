@@ -1,24 +1,13 @@
 package com.mikivan.service;
 
-        //import java.io.File;
         import java.io.IOException;
         import java.security.GeneralSecurityException;
-        //import java.text.MessageFormat;
-        //import java.util.List;
-        import java.util.ResourceBundle;
-        //import java.util.concurrent.ExecutorService;
         import java.util.concurrent.Executors;
-        //import java.util.concurrent.ScheduledExecutorService;
-        //import org.apache.commons.cli.CommandLine;
-        //import org.apache.commons.cli.OptionBuilder;
-        //import org.apache.commons.cli.Options;
-        import org.apache.commons.cli.ParseException;
         import org.dcm4che3.data.Tag;
         import org.dcm4che3.data.UID;
         import org.dcm4che3.data.Attributes;
         import org.dcm4che3.data.ElementDictionary;
         import org.dcm4che3.data.VR;
-        //import org.dcm4che3.io.DicomInputStream;
         import org.dcm4che3.net.ApplicationEntity;
         import org.dcm4che3.net.Association;
         import org.dcm4che3.net.Connection;
@@ -29,10 +18,6 @@ package com.mikivan.service;
         import org.dcm4che3.net.pdu.ExtendedNegotiation;
         import org.dcm4che3.net.pdu.PresentationContext;
         import org.dcm4che3.tool.common.CLIUtils;
-        //import org.dcm4che3.util.SafeClose;
-        //import org.dcm4che3.util.StringUtils;
-
-        //import org.dcm4che3.net.Dimse;
 
 
 public class CMoveSCU extends Device {
@@ -48,9 +33,6 @@ public class CMoveSCU extends Device {
             this.level = level;
         }
     }
-
-//    private static ResourceBundle rb =
-//            ResourceBundle.getBundle("org.dcm4che3.tool.movescu.messages");
 
     private static final int[] DEF_IN_FILTER = {
             Tag.SOPInstanceUID,
@@ -69,22 +51,13 @@ public class CMoveSCU extends Device {
     private int[] inFilter = DEF_IN_FILTER;
     private Association as;
 
-    //[injections of mikivan][0002]
     private boolean isConstructorWithArgs = false;
-    //[end][0002]
+
     private static String[] IVR_LE_FIRST = new String[]{"1.2.840.10008.1.2", "1.2.840.10008.1.2.1", "1.2.840.10008.1.2.2"};
     private static String[] EVR_LE_FIRST = new String[]{"1.2.840.10008.1.2.1", "1.2.840.10008.1.2.2", "1.2.840.10008.1.2"};
     private static String[] EVR_BE_FIRST = new String[]{"1.2.840.10008.1.2.2", "1.2.840.10008.1.2.1", "1.2.840.10008.1.2"};
     private static String[] IVR_LE_ONLY  = new String[]{"1.2.840.10008.1.2"};
 
-
-
-//    public CMoveSCU() throws IOException {
-//        super("movescu");
-//        addConnection(conn);
-//        addApplicationEntity(ae);
-//        ae.addConnection(conn);
-//    }
 
     public final void setPriority(int priority) {
         this.priority = priority;
@@ -125,8 +98,7 @@ public class CMoveSCU extends Device {
                     String[] c,
                     String[] opts,
                     String   moveLevel,
-                    String[] m,
-                    String[] args) throws IOException, ParseException {
+                    String[] m) throws IOException {
 
         super("movescu");
         this.addConnection(conn);
@@ -155,8 +127,6 @@ public class CMoveSCU extends Device {
                 InformationModel.StudyRoot,
                 IVR_LE_FIRST,//CLIUtils.transferSyntaxesOf(cl),
                 false);
-
-        //CommandLine cl = parseComandLine(args);
 
         //configureKeys(this, cl);
         this.addLevel(moveLevel);
@@ -190,13 +160,10 @@ public class CMoveSCU extends Device {
                 this.getExecutor2().shutdown();
                 this.getScheduledExecutor().shutdown();
 
-                System.out.println("isClosed [1]= " + this.as.getSocket().isClosed());
-
                 this.as.waitForSocketClose();
 
-                System.out.println("isClosed [2]= " + this.as.getSocket().isClosed());
 
-                System.out.println("state [3]------> " + this.as.getState().toString());
+                System.out.println("state [2]------> " + this.as.getState().toString());
 
                 this.isConstructorWithArgs = false;
 
@@ -206,16 +173,11 @@ public class CMoveSCU extends Device {
             catch (Exception e){
 
                 return "false";
-
             }
-
         }
         else{
-
             return "false";
         }
-
-
     }
     //------------------------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
@@ -230,8 +192,6 @@ public class CMoveSCU extends Device {
 
         try{
 
-            for (int i = 0; i < args.length ; i++ ) System.out.println( "args[" + i + "] = " + args[i] );
-
 //            String[] bind   = { "IVAN",    "192.168.121.101", "4006"};//строгий порядок
 //            String[] remote = { "WATCHER", "192.168.121.100", "4006"};//строгий порядок
             String[] bind   = { "IVAN",   "192.168.0.74", "49049"};//строгий порядок
@@ -240,7 +200,8 @@ public class CMoveSCU extends Device {
 //            String[] m      = { "StudyInstanceUID", "1.2.840.113704.1.111.4156.1367430813.2"};
             String[] m      = { "StudyInstanceUID", "1.2.840.113619.2.134.1762938020.1589.1356408822.224"};
 
-            CMoveSCU main = new CMoveSCU(bind, remote, opts, "STUDY", m, args);
+
+            CMoveSCU main = new CMoveSCU(bind, remote, opts, "STUDY", m);
 
             System.out.println("main.doMove() = " + main.doMove());
 
@@ -251,9 +212,6 @@ public class CMoveSCU extends Device {
             e.printStackTrace();
             System.exit(2);
         };
-
-
-
     }
 //======================================================================================================================
 
